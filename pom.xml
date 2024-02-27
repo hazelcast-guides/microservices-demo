@@ -37,5 +37,6 @@
         <module>pipelines</module>
         <module>machine-status-service</module>
         <module>routing-tools</module>
+        <module>spring-hazelcast-pipeline-dispatcher</module>
     </modules>
 </project>
