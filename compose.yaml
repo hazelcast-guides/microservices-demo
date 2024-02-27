@@ -52,8 +52,6 @@ services:
           machinestatus_response
     networks:
       - hznet
-    profiles:
-      - disabled
 
   submit-status-service-job-2:
     image: hazelcast/hazelcast-enterprise:5.3.1
@@ -70,6 +68,8 @@ services:
           machinestatus_response
     networks:
       - hznet
+    profiles:
+      - disabled
 
   refdata-loader:
     image: amazoncorretto:11
@@ -158,8 +158,6 @@ services:
       - ".:/project"
     networks:
       - hznet
-    profiles:
-      - disabled
 
   load-routing-config-2:
     image: amazoncorretto:21
@@ -174,6 +172,8 @@ services:
       - ".:/project"
     networks:
       - hznet
+    profiles:
+      - disabled
 
   dump-routing-config:
     image: amazoncorretto:21
@@ -214,6 +214,8 @@ services:
     image: provectuslabs/kafka-ui
     environment:
       DYNAMIC_CONFIG_ENABLED: true
+      KAFKA_CLUSTERS_0_NAME: machine-events
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: redpanda:9092
     ports:
       - 8000:8080
     networks:
