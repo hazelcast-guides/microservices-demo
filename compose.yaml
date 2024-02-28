@@ -178,9 +178,9 @@ services:
     image: amazoncorretto:21
     command: >
       java -cp /project/routing-tools/target/dependency/*
-           -Dhazelcast.client.config=/project/config/hazelcast-client.yaml 
+           -Dhazelcast.client.config=/project/config/cli-client.yaml 
            hazelcast.platform.solutions.pipeline.dispatcher.RoutingConfigTool dump 
-           --output routes.json
+           --output /project/routes.json
     environment:
       HZCLIENT_INSTANCENAME: config_tool
     volumes:
