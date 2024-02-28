@@ -1,10 +1,10 @@
 package hazelcast.platform.labs.machineshop.domain;
 
-import com.hazelcast.nio.serialization.*;
+import com.hazelcast.nio.serialization.compact.CompactReader;
+import com.hazelcast.nio.serialization.compact.CompactSerializer;
+import com.hazelcast.nio.serialization.compact.CompactWriter;
 
-import java.io.IOException;
-
-public class MachineStatusSummary implements Portable {
+public class MachineStatusSummary  {
     private String serialNumber;
     private short  averageBitTemp10s;
     public String getSerialNumber() {
@@ -31,33 +31,30 @@ public class MachineStatusSummary implements Portable {
                 '}';
     }
 
-    public static final int ID = 3;
+    public static class Serializer implements CompactSerializer<MachineStatusSummary>{
 
-    @Override
-    public int getFactoryId() {
-        return MachineShopPortableFactory.ID;
+        @Override
+        public MachineStatusSummary read(CompactReader compactReader) {
+            MachineStatusSummary result = new MachineStatusSummary();
+            result.setSerialNumber(compactReader.readString("serialNumber"));
+            result.setAverageBitTemp10s(compactReader.readInt16("averageBitTemp10s"));
+            return result;
+        }
+
+        @Override
+        public void write(CompactWriter compactWriter, MachineStatusSummary machineStatusSummary) {
+            compactWriter.writeString("serialNumber", machineStatusSummary.getSerialNumber());
+            compactWriter.writeInt16("averageBitTemp10s", machineStatusSummary.getAverageBitTemp10s());
+        }
+
+        @Override
+        public String getTypeName() {
+            return MachineStatusSummary.class.getName();
+        }
+
+        @Override
+        public Class<MachineStatusSummary> getCompactClass() {
+            return MachineStatusSummary.class;
+        }
     }
-
-    @Override
-    public int getClassId() {
-        return MachineStatusSummary.ID;
-    }
-
-    @Override
-    public void writePortable(PortableWriter portableWriter) throws IOException {
-        portableWriter.writeString("serialNumber", serialNumber);
-        portableWriter.writeShort("averageBitTemp10s", averageBitTemp10s);
-    }
-
-    @Override
-    public void readPortable(PortableReader portableReader) throws IOException {
-        this.serialNumber = portableReader.readString("serialNumber");
-        this.averageBitTemp10s = portableReader.readShort("averageBitTemp10s");
-    }
-
-    public static ClassDefinition CLASS_DEFINITION =
-            new ClassDefinitionBuilder(MachineShopPortableFactory.ID, MachineStatusSummary.ID)
-                    .addStringField("serialNumber")
-                    .addShortField("averageBitTemp10s")
-                    .build();
 }

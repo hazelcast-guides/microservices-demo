@@ -1,14 +1,13 @@
 package hazelcast.platform.labs.machineshop.domain;
 
-import com.hazelcast.nio.serialization.Portable;
-import com.hazelcast.nio.serialization.PortableReader;
-import com.hazelcast.nio.serialization.PortableWriter;
+import com.hazelcast.nio.serialization.compact.CompactReader;
+import com.hazelcast.nio.serialization.compact.CompactSerializer;
+import com.hazelcast.nio.serialization.compact.CompactWriter;
 
-import java.io.IOException;
 import java.util.Random;
 
 
-public class MachineProfile implements Portable {
+public class MachineProfile {
     private String serialNum;
     private String location;
 
@@ -130,39 +129,44 @@ public class MachineProfile implements Portable {
         return result;
     }
 
+    public static class Serializer implements CompactSerializer<MachineProfile> {
 
-    public static int ID = 1;
-    @Override
-    public int getFactoryId() {
-        return MachineShopPortableFactory.ID;
-    }
+        @Override
+        public MachineProfile read(CompactReader compactReader) {
+            MachineProfile result = new MachineProfile();
 
-    @Override
-    public int getClassId() {
-        return MachineProfile.ID;
-    }
+            result.setSerialNum(compactReader.readString("serialNum"));
+            result.setLocation(compactReader.readString("location"));
+            result.setBlock(compactReader.readString("block"));
+            result.setFaultyOdds(compactReader.readFloat32("faultyOdds"));
+            result.setManufacturer(compactReader.readString("manufacturer"));
+            result.setWarningTemp(compactReader.readInt16("warningTemp"));
+            result.setCriticalTemp(compactReader.readInt16("criticalTemp"));
+            result.setMaxRPM(compactReader.readInt32("maxRPM"));
 
-    @Override
-    public void writePortable(PortableWriter writer) throws IOException {
-        writer.writeString("serialNum", this.serialNum);
-        writer.writeString("location", this.location);
-        writer.writeString("block", this.block);
-        writer.writeFloat("faultyOdds", this.faultyOdds);
-        writer.writeString("manufacturer", this.manufacturer);
-        writer.writeShort("warningTemp", this.warningTemp);
-        writer.writeShort("criticalTemp", this.criticalTemp);
-        writer.writeInt("maxRPM", this.maxRPM);
-    }
+            return result;
+        }
 
-    @Override
-    public void readPortable(PortableReader reader) throws IOException {
-        this.serialNum = reader.readString("serialNum");
-        this.location = reader.readString("location");
-        this.block = reader.readString("block");
-        this.faultyOdds = reader.readFloat("faultyOdds");
-        this.manufacturer = reader.readString("manufacturer");
-        this.warningTemp = reader.readShort("warningTemp");
-        this.criticalTemp = reader.readShort("criticalTemp");
-        this.maxRPM = reader.readInt("maxRPM");
+        @Override
+        public void write(CompactWriter compactWriter, MachineProfile machineProfile) {
+            compactWriter.writeString("serialNum", machineProfile.getSerialNum());
+            compactWriter.writeString("location", machineProfile.getLocation());
+            compactWriter.writeString("block", machineProfile.getBlock());
+            compactWriter.writeFloat32("faultyOdds", machineProfile.getFaultyOdds());
+            compactWriter.writeString("manufacturer", machineProfile.getManufacturer());
+            compactWriter.writeInt16("warningTemp", machineProfile.getWarningTemp());
+            compactWriter.writeInt16("criticalTemp", machineProfile.getCriticalTemp());
+            compactWriter.writeInt32("maxRPM", machineProfile.getMaxRPM());
+        }
+
+        @Override
+        public String getTypeName() {
+            return MachineProfile.class.getName();
+        }
+
+        @Override
+        public Class<MachineProfile> getCompactClass() {
+            return MachineProfile.class;
+        }
     }
 }

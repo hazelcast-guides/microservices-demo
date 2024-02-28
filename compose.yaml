@@ -1,17 +1,16 @@
 services:
 
   hz:
-    image: hazelcast/hazelcast:5.3.1
+    image: hazelcast/hazelcast:5.3.6
     environment:
       JAVA_OPTS: -Dhazelcast.config=/project/hazelcast.yaml
-      CLASSPATH: /project/common/target/common-1.0-SNAPSHOT.jar
     volumes:
       - ".:/project"
     networks:
       - hznet
 
   mc:
-    image: hazelcast/management-center:5.3.1
+    image: hazelcast/management-center:5.3
     environment:
       MC_DEFAULT_CLUSTER: dev
       MC_DEFAULT_CLUSTER_MEMBERS: hz:5701
@@ -21,7 +20,7 @@ services:
       - hznet
 
   submit-aggregation-job:
-    image: hazelcast/hazelcast-enterprise:5.3.1
+    image: hazelcast/hazelcast-enterprise:5.3.6
     volumes:
       - ".:/project"
     command: >
@@ -37,7 +36,7 @@ services:
     - hznet
 
   submit-status-service-job:
-    image: hazelcast/hazelcast-enterprise:5.3.1
+    image: hazelcast/hazelcast-enterprise:5.3.6
     volumes:
       - ".:/project"
     command: >
@@ -54,7 +53,7 @@ services:
       - hznet
 
   submit-status-service-job-2:
-    image: hazelcast/hazelcast-enterprise:5.3.1
+    image: hazelcast/hazelcast-enterprise:5.3.6
     volumes:
       - ".:/project"
     command: >

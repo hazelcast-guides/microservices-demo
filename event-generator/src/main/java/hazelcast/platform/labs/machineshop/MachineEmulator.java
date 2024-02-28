@@ -2,7 +2,6 @@ package hazelcast.platform.labs.machineshop;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import hazelcast.platform.labs.machineshop.domain.MachineStatusEvent;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;

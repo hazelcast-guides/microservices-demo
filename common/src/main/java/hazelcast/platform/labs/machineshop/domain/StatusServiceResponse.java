@@ -1,10 +1,10 @@
 package hazelcast.platform.labs.machineshop.domain;
 
-import com.hazelcast.nio.serialization.*;
+import com.hazelcast.nio.serialization.compact.CompactReader;
+import com.hazelcast.nio.serialization.compact.CompactSerializer;
+import com.hazelcast.nio.serialization.compact.CompactWriter;
 
-import java.io.IOException;
-
-public class StatusServiceResponse implements Portable {
+public class StatusServiceResponse  {
     private String serialNumber;
     private Short  averageBitTemp10s;
     private Short  warningTemp;
@@ -52,44 +52,6 @@ public class StatusServiceResponse implements Portable {
     }
 
     @Override
-    public int getFactoryId() {
-        return MachineShopPortableFactory.ID;
-    }
-
-    public static final int ID = 5;
-
-    @Override
-    public int getClassId() {
-        return StatusServiceResponse.ID;
-    }
-
-    @Override
-    public void writePortable(PortableWriter portableWriter) throws IOException {
-        portableWriter.writeString("serialNumber", this.serialNumber);
-        portableWriter.writeShort("averageBitTemp10s", this.averageBitTemp10s);
-        portableWriter.writeShort("warningTemp", this.warningTemp);
-        portableWriter.writeShort("criticalTemp", this.criticalTemp);
-        portableWriter.writeString("status", this.status);
-    }
-
-    @Override
-    public void readPortable(PortableReader portableReader) throws IOException {
-        this.serialNumber = portableReader.readString("serialNumber");
-        this.averageBitTemp10s = portableReader.readShort("averageBitTemp10s");
-        this.warningTemp = portableReader.readShort("warningTemp");
-        this.criticalTemp = portableReader.readShort("criticalTemp");
-        this.status = portableReader.readString("status");
-    }
-
-    public static ClassDefinition CLASS_DEFINITION =
-            new ClassDefinitionBuilder(MachineShopPortableFactory.ID, StatusServiceResponse.ID)
-                    .addStringField("serialNumber")
-                    .addShortField("averageBitTemp10s")
-                    .addShortField("warningTemp")
-                    .addShortField("criticalTemp")
-                    .addStringField("status").build();
-
-    @Override
     public String toString() {
         return "StatusServiceResponse{" +
                 "serialNumber='" + serialNumber + '\'' +
@@ -98,5 +60,38 @@ public class StatusServiceResponse implements Portable {
                 ", criticalTemp=" + criticalTemp +
                 ", status='" + status + '\'' +
                 '}';
+    }
+
+    public static class Serializer implements CompactSerializer<StatusServiceResponse> {
+
+        @Override
+        public StatusServiceResponse read(CompactReader compactReader) {
+            StatusServiceResponse result = new StatusServiceResponse();
+            result.setSerialNumber(compactReader.readString("serialNumber"));
+            result.setAverageBitTemp10s(compactReader.readInt16("averageBitTemp10s"));
+            result.setWarningTemp(compactReader.readInt16("warningTemp"));
+            result.setCriticalTemp(compactReader.readInt16("criticalTemp"));
+            result.setStatus(compactReader.readString("status"));
+            return result;
+        }
+
+        @Override
+        public void write(CompactWriter compactWriter, StatusServiceResponse statusServiceResponse) {
+            compactWriter.writeString("serialNumber", statusServiceResponse.getSerialNumber());
+            compactWriter.writeInt16("averageBitTemp10s", statusServiceResponse.getAverageBitTemp10s());
+            compactWriter.writeInt16("warningTemp", statusServiceResponse.getWarningTemp());
+            compactWriter.writeInt16("criticalTemp", statusServiceResponse.getCriticalTemp());
+            compactWriter.writeString("status", statusServiceResponse.getStatus());
+        }
+
+        @Override
+        public String getTypeName() {
+            return StatusServiceResponse.class.getName();
+        }
+
+        @Override
+        public Class<StatusServiceResponse> getCompactClass() {
+            return StatusServiceResponse.class;
+        }
     }
 }

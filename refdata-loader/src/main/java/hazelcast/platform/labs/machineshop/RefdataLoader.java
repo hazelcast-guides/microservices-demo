@@ -3,15 +3,14 @@ package hazelcast.platform.labs.machineshop;
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientConnectionStrategyConfig;
-import com.hazelcast.config.EventJournalConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import hazelcast.platform.labs.machineshop.domain.MachineProfile;
-import hazelcast.platform.labs.machineshop.domain.MachineShopPortableFactory;
 import hazelcast.platform.labs.machineshop.domain.MachineStatusSummary;
 import hazelcast.platform.labs.machineshop.domain.Names;
+import hazelcast.platform.labs.machineshop.domain.StatusServiceResponse;
 import hazelcast.platform.labs.viridian.ViridianConnection;
 
 import java.io.*;
@@ -57,21 +56,6 @@ public class RefdataLoader {
 
     private static final List<Profile> profiles = new ArrayList<>();
 
-    // TODO value format should be portable, why does this work ?
-    private static final String EVENT_MAPPING_SQL = "CREATE OR REPLACE MAPPING " + Names.EVENT_MAP_NAME + " (" +
-            "serialNum VARCHAR, " +
-            "eventTime BIGINT, " +
-            "bitRPM INTEGER, " +
-            "bitTemp SMALLINT, " +
-            "bitPositionX INTEGER, " +
-            "bitPositionY INTEGER, " +
-            "bitPositionZ INTEGER) " +
-            "TYPE IMap OPTIONS (" +
-            "'keyFormat' = 'java'," +
-            "'keyJavaClass' = 'java.lang.String'," +
-            "'valueFormat' = 'json-flat')";
-
-    // TODO value format should be portable, why does this work ?
     private static final String PROFILE_MAPPING_SQL = "CREATE OR REPLACE MAPPING " + Names.PROFILE_MAP_NAME + " (" +
             "serialNum VARCHAR, " +
             "location VARCHAR, " +
@@ -106,9 +90,8 @@ public class RefdataLoader {
             "TYPE IMap OPTIONS (" +
             "'keyFormat' = 'java'," +
             "'keyJavaClass' = 'java.lang.String'," +
-            "'valueFormat' = 'portable'," +
-            "'valuePortableFactoryId' = '" + MachineShopPortableFactory.ID  + "'," +
-            "'valuePortableClassId'='" + MachineStatusSummary.ID + "')";
+            "'valueFormat' = 'compact'," +
+            "'valueCompactTypeName'='" + MachineStatusSummary.class.getName() + "')";
 
     private static String getRequiredProp(String propName){
         String prop = System.getenv(propName);
@@ -187,7 +170,6 @@ public class RefdataLoader {
     private static void doSQLMappings(HazelcastInstance hzClient){
         hzClient.getSql().execute(PROFILE_MAPPING_SQL);
         hzClient.getSql().execute(CONTROLS_MAPPING_SQL);
-        hzClient.getSql().execute(EVENT_MAPPING_SQL);
         hzClient.getSql().execute(SYSTEM_ACTIVITIES_MAPPING_SQL);
         hzClient.getSql().execute(MACHINE_STATUS_SUMMARY_MAPPING_SQL);
         hzClient.getSql().execute(MACHINE_PROFILE_LOCATION_INDEX_SQL);
@@ -199,17 +181,6 @@ public class RefdataLoader {
                 .setInMemoryFormat(InMemoryFormat.BINARY)
                 .setBackupCount(1));
 
-        hzClient.getConfig().addMapConfig(new MapConfig(Names.EVENT_MAP_NAME)
-                .setInMemoryFormat(InMemoryFormat.BINARY)
-                .setBackupCount(1)
-                .setEventJournalConfig(
-                        new EventJournalConfig()
-                                .setEnabled(true)
-                                .setCapacity(3000000)
-                                .setTimeToLiveSeconds(0)
-                ));
-//        hzClient.getExecutorService("default").execute(new Names.ProfileMapConfigurationTask());
-//        hzClient.getExecutorService("default").execute(new Names.EventMapConfigurationTask());
         System.out.println("Initialized Map Configurations");
     }
     public static void main(String []args){
@@ -224,8 +195,10 @@ public class RefdataLoader {
         }
         clientConfig.getConnectionStrategyConfig().setAsyncStart(false);
         clientConfig.getConnectionStrategyConfig().setReconnectMode(ClientConnectionStrategyConfig.ReconnectMode.ON);
-        clientConfig.getSerializationConfig().getPortableFactories()
-            .put(MachineShopPortableFactory.ID, new MachineShopPortableFactory());
+        clientConfig.getSerializationConfig().getCompactSerializationConfig()
+                .addSerializer(new MachineStatusSummary.Serializer())
+                .addSerializer(new MachineProfile.Serializer())
+                .addSerializer(new StatusServiceResponse.Serializer());
 
         HazelcastInstance hzClient = HazelcastClient.newHazelcastClient(clientConfig);
 
@@ -279,4 +252,5 @@ public class RefdataLoader {
             this.faultyPercentage = faultyPercentage;
         }
     }
+
 }

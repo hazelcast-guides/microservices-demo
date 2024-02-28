@@ -10,10 +10,8 @@ import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.kafka.KafkaSources;
 import com.hazelcast.jet.pipeline.*;
-import com.hazelcast.nio.serialization.ClassDefinition;
+import com.hazelcast.nio.serialization.genericrecord.GenericRecord;
 import com.hazelcast.nio.serialization.genericrecord.GenericRecordBuilder;
-import hazelcast.platform.labs.machineshop.domain.MachineStatusSummary;
-import hazelcast.platform.labs.machineshop.domain.Names;
 
 import java.util.Map;
 import java.util.Properties;
@@ -87,21 +85,36 @@ public class AggregationPipeline {
                     .aggregate(AggregateOperations.averagingLong(entry -> entry.get("bitTemp").asLong()))
                     .setName("Average Temps");
 
-        // TODO - could I get away with not using GenericRecord here or will it cause class loading problems ?
-        //        I will never read this on the server side so it might be OK
+        /*
+         * Convert the KeyedWindowResult to a GenericRecord representation of a MachineStatusSummary.
+         * Using GenericRecordHere eliminates the need for the MachineStatusSummary class on the server.
+         *
+         * INPUT: KeyedWindowResult<String, Double>
+         *        See the description above.
+         *
+         * OUTPUT: GenericRecord representation of a MachineStatusSummary suitable for writing into
+         *         an IMap
+         */
+        StreamStage<GenericRecord> machineStatusSummaries = averageTemps.map((kwr) -> GenericRecordBuilder.
+                compact("hazelcast.platform.labs.machineshop.domain.MachineStatusSummary")
+                .setString("serialNumber", kwr.getKey())
+                .setInt16("averageBitTemp10s", kwr.getValue().shortValue()).build())
+                .setName("Convert to GenericRecord");
 
         /*
-         * Make a MachineStatusSummary GenericRecord out of the event.
+         * Create a Tuple2<String, GenericRecord> and write it to the status summary IMap.
+         *
+         * Note that a Tuple2 also implements Map.Entry, which is what we need to write
+         * to an IMap sink.  The GenericRecord is a generic representation of a MachineStatusSummary
+         * object.  The serialNumber is extracted from the object and
+         *
+         * INPUT: GenericRecord representation of a MachineStatusSummary
+         *        See the description above
+         *
+         * OUTPUT: None
          */
-
-        ServiceFactory<?, ClassDefinition> classDefinitionServiceFactory = ServiceFactories.sharedService(ctx -> MachineStatusSummary.CLASS_DEFINITION);
-
-        averageTemps.mapUsingService(classDefinitionServiceFactory,
-                        (cdef, kwr) -> GenericRecordBuilder.portable(cdef)
-                                .setString("serialNumber", kwr.getKey())
-                                .setInt16("averageBitTemp10s", kwr.getValue().shortValue()).build())
-                .map(mss -> Tuple2.tuple2(mss.getString("serialNumber"), mss))
-                .writeTo(Sinks.map(Names.STATUS_SUMMARY_MAP_NAME));
+        machineStatusSummaries.map(mss -> Tuple2.tuple2(mss.getString("serialNumber"), mss))
+                .writeTo(Sinks.map(Names.STATUS_SUMMARY_MAP_NAME)).setName("Write to IMap");
 
         return pipeline;
     }
